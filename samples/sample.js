@@ -52,7 +52,38 @@ var c13 = ESB.createLoggerComponent(esbCallback);
 var c14 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
 var c15 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
 // at the end of the flow return resulting message 
-var c16 = ESB.createResultComponent(esbCallback);  
+var c16 = ESB.createResultComponent(esbCallback); 
+
+// route component - based on ESBMessage.context field values the message will be routed to the appropriate named channel
+var c17 = ESB.createRouteComponent(esbCallback, {
+	routeItems: [
+		{
+			routeFunction: function(esbMessage){
+				if(esbMessage.context.caller.user=="john@doe.com")
+					return true;
+				return false;
+			},
+			channel: "john"
+		},
+		{
+			routeFunction: function(esbMessage){
+				if(esbMessage.context.caller.user=="marry@doe.com")
+					return true;
+				return false;	
+			},
+			channel: "marry"
+		}
+	]
+});  
+var c18 = ESB.createResultComponent(esbCallback);
+
+// script component with custom processing function
+var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
+	if(esbMessage.context.caller.user=="john@doe.com"){
+		esbMessage.payload[0].additionalField = true;
+		esbMessage.context.caller.user = "johnthegreat@doe.com"
+	}
+});
 
 // wire up processing flow
 c1.connect(c2);
@@ -69,9 +100,18 @@ c11.connect(c12);
 c12.connect(c14);
 c14.connect(c15);
 c15.connect(c13);
-c13.connect(c16);
+c13.connect(c17);
 
+// for router component connected components MUST be connected using channel names
+c17.connect("john",c19);
+c17.connect("marry",c18);
+
+c19.connect(c16);
 
 // prepare input message and start processing 
-var message = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");
-c1.send(message);
+var message1 = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");
+c1.send(message1);
+
+var message2 = ESB.createMessage({hello: "world"},"marry@doe.com","CRM","928938xbs928");
+c1.send(message2);
+

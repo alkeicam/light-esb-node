@@ -81,6 +81,47 @@ var component1 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.t
 var component2 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
 ```
 
+#### Content based routing - redirect messages to the appropriate channel based on message contents
+```js
+// route component - based on ESBMessage.context field values the message will be routed to the appropriate named channel
+var c17 = ESB.createRouteComponent(esbCallback, {
+	routeItems: [
+		{
+			routeFunction: function(esbMessage){
+				if(esbMessage.context.caller.user=="john@doe.com")
+					return true;
+				return false;
+			},
+			channel: "john"
+		},
+		{
+			routeFunction: function(esbMessage){
+				if(esbMessage.context.caller.user=="marry@doe.com")
+					return true;
+				return false;	
+			},
+			channel: "marry"
+		}
+	]
+});  
+
+
+// for router component connected components MUST be connected using channel names
+c17.connect("john",c19);
+c17.connect("marry",c18);
+```
+
+#### Freestyle - component that accepts any custom processing script
+```js
+// script component with custom processing function
+var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
+	if(esbMessage.context.caller.user=="john@doe.com"){
+		esbMessage.payload[0].additionalField = true;
+		esbMessage.context.caller.user = "johnthegreat@doe.com"
+	}
+});
+```
+
 #### Return results - at the end of the processing flow
 ```js
 // at the end of the flow return resulting message - esbCallback function will receive the resulting message object 
