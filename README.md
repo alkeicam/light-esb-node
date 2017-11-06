@@ -150,5 +150,5 @@ process.env.DEBUG = 'esb:*';
 ```
 
 ### Changelog
-- **v1.0.1** - added Route and Script components
+- **v1.0.2** - added Route and Script components
 - **v1.0.0** - initial version
