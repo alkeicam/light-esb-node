@@ -14,9 +14,9 @@ npm install light-esb-node
 To use, simply create components, wire them up and start sending messages to be processed.
 
 #### Core concepts
-Message - Javascript object that is being processed by Components
-Component - atomic service that takes Message as input, processes the Message and returns resulting (usually modified) message as result
-Flow - chain of Components fulfilling processing of some integration/orchestration logic (transform data, call third party services)
+* Message - Javascript object that is being processed by Components
+* Component - atomic service that takes Message as input, processes the Message and returns resulting (usually modified) message as result
+* Flow - chain of Components fulfilling processing of some integration/orchestration logic (transform data, call third party services)
 
 
 #### Create a component
