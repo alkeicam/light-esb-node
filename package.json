@@ -1,0 +1,37 @@
+{
+  "name": "light-esb-node",
+  "version": "1.0.0",
+  "description": "Lightweight message processing and orchestration module for Node",
+  "author": {
+    "name": "Maciej Grula"
+  },
+  "license": "LGPL",
+  "keywords": [
+    "esb",
+    "API",
+    "REST",
+    "integration",
+    "messaging",
+    "bus",
+    "orchestration"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alkeicam/light-esb-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alkeicam/light-esb-node/issues",
+    "email": "maciej.grula@gmail.com"
+  },
+  "main": "./src/light-esb-node.js",
+  "engines": {
+    "node": ">=6.11.0"
+  },
+  "dependencies": {
+    "object-mapper": "4.2.0",
+    "node-uuid": "1.4.8",
+    "debug": "3.1.0",
+    "node-rest-client": "3.1.0",
+    "clone": "2.1.1"
+  }
+}
