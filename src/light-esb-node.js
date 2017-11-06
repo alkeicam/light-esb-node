@@ -436,6 +436,70 @@ function createResultComponent(callback)
     return component;
 }
 
+//--------- ESB Route Component
+/**
+ * Represents a RouteComponent that allows conditional routing (content based) of messages.
+ * 
+ * Routing configuration is an object:
+ * {
+ *   routeItems: [
+ *       {  
+ *           routeFunction: (Function(ESBMessage)),
+ *           channel: (String)
+ *       }
+ *   ]
+ * }
+ *
+ * routeFunction MUST return True when for given message it should be transferred to the given channel
+ * @type {function}
+ */
+var ESBRouteComponent = function(callback, routingConfiguration){    
+    ESBComponent.call(this,function(context,message){
+        var self = this;
+        var destinationChannel = 'default';
+        routingConfiguration.routeItems.forEach(function(routingItem, index, array){
+            if(routingItem.routeFunction(message)){                
+                self.next(routingItem.channel, message);
+            }
+        });        
+    },callback);
+}
+
+ESBRouteComponent.prototype = new ESBComponent(function(){});
+ESBRouteComponent.prototype.constructor = ESBRouteComponent;
+
+
+function createRouteComponent(callback, routingConfiguration)
+{
+    var component = new ESBRouteComponent(callback, routingConfiguration);       
+    return component;
+}
+
+//--------- ESB Script Component
+/**
+ * Represents a ScriptComponent that gives full freedom of manipulation of the message by using a provided function.
+ * Function must take following arguments: ESBMessage, callback and MUST either call callback function (the flow processing will be stopped) or modify ESBMessage.
+ * The function MUST not be blocking processing.
+ * @type {function}
+ */
+var ESBScriptComponent = function(callback, scriptFunction){    
+    ESBComponent.call(this,function(context,message){
+        var self = this;
+        scriptFunction(message, callback);
+        self.next(message);
+    },callback);
+}
+
+ESBScriptComponent.prototype = new ESBComponent(function(){});
+ESBScriptComponent.prototype.constructor = ESBScriptComponent;
+
+
+function createScriptComponent(callback, scriptFunction)
+{
+    var component = new ESBScriptComponent(callback, scriptFunction);       
+    return component;
+}
+
 
 module.exports = {    
      createLoggerComponent: createLoggerComponent,
@@ -445,5 +509,7 @@ module.exports = {
      createCombineComponent: createCombineComponent,
      createCallComponent: createCallComponent,
      createResultComponent: createResultComponent,
+     createRouteComponent: createRouteComponent,
+     createScriptComponent: createScriptComponent,
      createMessage: createMessage
 }
