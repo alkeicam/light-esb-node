@@ -26,7 +26,7 @@ function esbCallback(error,message){
   }else{
     console.log("RESULT received:", message);
   }
-  
+
 }
 
 // create different types of components, some having callback for eventuall error handling, some no
@@ -45,14 +45,16 @@ var c8 = ESB.createLoggerComponent(esbCallback);
 // from now on, the payload of the ESBMessage that will be processed will be replaced with contents of the vars.customerData object
 var c10 = ESB.createVarComponent("customerData",'GET');
 var c11 = ESB.createLoggerComponent(esbCallback);
-// now some merging of messages, contents of vars.customerInfo will be merged into processed message contents 
+// now some merging of messages, contents of vars.customerInfo will be merged into processed message contents
 var c12 = ESB.createCombineComponent("customerInfo");
 var c13 = ESB.createLoggerComponent(esbCallback);
 // now it is time for some third party calls, call external REST service
 var c14 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
 var c15 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
-// at the end of the flow return resulting message 
-var c16 = ESB.createResultComponent(esbCallback); 
+// at the end of the flow return resulting message
+var c16 = ESB.createResultComponent(esbCallback);
+
+
 
 // route component - based on ESBMessage.context field values the message will be routed to the appropriate named channel
 var c17 = ESB.createRouteComponent(esbCallback, {
@@ -69,12 +71,12 @@ var c17 = ESB.createRouteComponent(esbCallback, {
 			routeFunction: function(esbMessage){
 				if(esbMessage.context.caller.user=="marry@doe.com")
 					return true;
-				return false;	
+				return false;
 			},
 			channel: "marry"
 		}
 	]
-});  
+});
 var c18 = ESB.createResultComponent(esbCallback);
 
 // script component with custom processing function
@@ -84,11 +86,13 @@ var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
 		esbMessage.context.caller.user = "johnthegreat@doe.com"
 	}
 });
+// full call using path parameter (${postId}), query params (?param1=yes) and basic auth
+var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"yes"},"username","pass");
 
 // wire up processing flow
 c1.connect(c2);
-c2.connect(c3);  
-c2.connect(c4); 
+c2.connect(c3);
+c2.connect(c4);
 c3.connect(c9);
 c9.connect(c5);
 c5.connect(c6);
@@ -96,7 +100,7 @@ c6.connect(c7);
 c7.connect(c8);
 c8.connect(c10);
 c10.connect(c11);
-c11.connect(c12);  
+c11.connect(c12);
 c12.connect(c14);
 c14.connect(c15);
 c15.connect(c13);
@@ -108,10 +112,9 @@ c17.connect("marry",c18);
 
 c19.connect(c16);
 
-// prepare input message and start processing 
+// prepare input message and start processing
 var message1 = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");
 c1.send(message1);
 
 var message2 = ESB.createMessage({hello: "world"},"marry@doe.com","CRM","928938xbs928");
 c1.send(message2);
-

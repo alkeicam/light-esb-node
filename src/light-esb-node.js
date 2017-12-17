@@ -6,7 +6,7 @@ var clone = require('clone');
 
 /**
  * Represents a message being processed by components.
- * 
+ *
  * @param   {object}    payload  - The payload of the message
  * @type {function}
  */
@@ -27,20 +27,20 @@ var ESBMessage = function(payload, callerUser, callerSystem, callerCorrelationId
 
 function createMessage(payload,callerUser, callerSystem, callerCorrelationId)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var message = new ESBMessage(payload,callerUser, callerSystem, callerCorrelationId);       
+    var message = new ESBMessage(payload,callerUser, callerSystem, callerCorrelationId);
     return message;
 }
 
 
 /**
  * Represents a base component processing Message.
- * 
+ *
  * @param   {function}    fn  - The function that will be invoked when processing Message.
  * @type {function}
  */
-var ESBComponent = function(fn, callback){    
+var ESBComponent = function(fn, callback){
     this.fn = fn;
     this.id = uuidGenerator.v4();
     this.channels = { };
@@ -54,9 +54,9 @@ ESBComponent.prototype.next = function (name, message) {
     }
     if(this.channels[name]){
         var self = this;
-        this.channels[name].forEach(function (channel) {    
-            util.debugMessage('Component %o passing message %o to next component %o using channel %o', self, message, channel, name);         
-            channel.send(message) 
+        this.channels[name].forEach(function (channel) {
+            util.debugMessage('Component %o passing message %o to next component %o using channel %o', self, message, channel, name);
+            channel.send(message)
         });
     }
 };
@@ -66,10 +66,10 @@ ESBComponent.prototype.connect = function (channel, component) {
         component = channel;
         channel = 'default';
     }
-    
+
     if (!this.channels[channel])
         this.channels[channel] = [];
-        
+
     this.channels[channel].push(component);
     util.debugComponent('Component %o connected component %o at channel %s', this, component, channel);
 };
@@ -78,7 +78,7 @@ ESBComponent.prototype.send = function (message) {
     util.debugComponent('Component: %o started processing message: %s', this, message.context.correlationId);
     try{
         this.fn(this.context, message);
-    } 
+    }
     catch (error){
         var errorInfo = {
             component: this,
@@ -98,10 +98,10 @@ ESBComponent.prototype.post = function (message) {
 //--------- ESB Logger Component
 /**
  * Represents a LoggerComponent that writes to the console contents of the message.
- * 
+ *
  * @type {function}
  */
-var ESBLoggerComponent = function(callback){    
+var ESBLoggerComponent = function(callback){
     ESBComponent.call(this,function(context,message){
         this.next(message);
     },callback);
@@ -116,9 +116,9 @@ ESBLoggerComponent.prototype.send = function (message) {
 
 function createLoggerComponent(callback)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var component = new ESBLoggerComponent(callback);       
+    var component = new ESBLoggerComponent(callback);
     return component;
 }
 
@@ -127,23 +127,23 @@ function createLoggerComponent(callback)
 /**
  * Represents a MapperComponent processing Message.
  * Mapper component can alter Message contents using object-mapper based transformation maps.
- * 
+ *
  * @param   {object}    map  - The map object that will be used by object-mapper to transform Message.
  * @type {function}
  */
-var ESBMapperComponent = function(map){ 
+var ESBMapperComponent = function(map){
     // component fields
     this.map = map;
 
-    // initialize component behaviour   
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
         var source = message.payload;
         var resultPayload = objectMapper(source, this.map);
-        util.debugMessage('Component %o processed map %o on source %o with result %o', this, this.map, source, resultPayload);      
-        message.payload = resultPayload  
+        util.debugMessage('Component %o processed map %o on source %o with result %o', this, this.map, source, resultPayload);
+        message.payload = resultPayload
         this.next(message);
     });
-    
+
 }
 
 ESBMapperComponent.prototype = new ESBComponent(function(){});
@@ -151,9 +151,40 @@ ESBMapperComponent.prototype.constructor = ESBMapperComponent;
 
 function createMapperComponent(map)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var component = new ESBMapperComponent(map);       
+    var component = new ESBMapperComponent(map);
+    return component;
+}
+
+//--------- ESB Payload Component
+/**
+ * Represents an PayloadComponent processing Message.
+ * Payload component replaces message payload with the object provided
+ *
+ * @param   {object}    newPayload  - The number of miliseconds for which the Message processing will be hold.
+ * @type {function}
+ */
+var ESBPayloadComponent = function(newPayload){
+    // component fields
+    this.newPayload = newPayload;
+
+    // initialize component behaviour
+    ESBComponent.call(this,function(context,message){
+        message.payload = clone(this.newPayload);
+        util.debugMessage('Component %o replaced payload with result %o', this, message.payload);
+        this.next(message);
+    });
+}
+
+ESBPayloadComponent.prototype = new ESBComponent(function(){});
+ESBPayloadComponent.prototype.constructor = ESBPayloadComponent;
+
+
+function createPayloadComponent(newPayload)
+{
+
+    var component = new ESBPayloadComponent(newPayload);
     return component;
 }
 
@@ -161,23 +192,23 @@ function createMapperComponent(map)
 /**
  * Represents a SleepComponent processing Message.
  * Sleep component stops message processing for a given number of miliseconds.
- * 
+ *
  * @param   {int}    miliseconds  - The number of miliseconds for which the Message processing will be hold.
  * @type {function}
  */
-var ESBSleepComponent = function(miliseconds){ 
+var ESBSleepComponent = function(miliseconds){
     // component fields
     this.sleepMiliseconds = miliseconds;
 
-    // initialize component behaviour   
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
         var self = this;
-        util.debugMessage('Component %o sleeping for %s with message %o', self, self.sleepMiliseconds, message);      
+        util.debugMessage('Component %o sleeping for %s with message %o', self, self.sleepMiliseconds, message);
         setTimeout(function(){
-                
+
             self.next(message);
-        },this.sleepMiliseconds);        
-    });    
+        },this.sleepMiliseconds);
+    });
 }
 
 ESBSleepComponent.prototype = new ESBComponent(function(){});
@@ -186,9 +217,9 @@ ESBSleepComponent.prototype.constructor = ESBSleepComponent;
 
 function createSleepComponent(miliseconds)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var component = new ESBSleepComponent(miliseconds);       
+    var component = new ESBSleepComponent(miliseconds);
     return component;
 }
 
@@ -196,21 +227,21 @@ function createSleepComponent(miliseconds)
 /**
  * Represents a VarSetComponent processing Message.
  * VarSet component either stores the current message payload under given name.
- * 
+ *
  * @param   {string}    variableName  - Name of the vars variable under which current message payload will be stored.
  * @type {function}
  */
-var ESBVarSetComponent = function(variableName){ 
+var ESBVarSetComponent = function(variableName){
     // component fields
     this.variableName = variableName;
 
-    // initialize component behaviour   
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
-        var self = this;        
+        var self = this;
         message.vars[this.variableName] = clone(message.payload);
-        util.debugMessage('Component %o stored payload %o under variable %s', self, message.vars[this.variableName] , this.variableName);      
+        util.debugMessage('Component %o stored payload %o under variable %s', self, message.vars[this.variableName] , this.variableName);
         self.next(message);
-    });    
+    });
 }
 
 ESBVarSetComponent.prototype = new ESBComponent(function(){});
@@ -219,24 +250,24 @@ ESBVarSetComponent.prototype.constructor = ESBVarSetComponent;
 /**
  * Represents a VarGetComponent processing Message.
  * VarGetet component either stores the current message payload under given name.
- * 
- * @param   {string}    variableName  - Name of the vars variable which contents will be put into the message payload. 
+ *
+ * @param   {string}    variableName  - Name of the vars variable which contents will be put into the message payload.
  * @type {function}
  */
-var ESBVarGetComponent = function(variableName){ 
+var ESBVarGetComponent = function(variableName){
     // component fields
     this.variableName = variableName;
 
-    // initialize component behaviour   
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
-        var self = this;   
+        var self = this;
         if(message.vars[this.variableName]){
             message.payload = clone(message.vars[this.variableName]);
-        }     
+        }
         //message.vars[this.variableName] = message.payload;
-        util.debugMessage('Component %o restored payload %o from variable %s', self, message.payload , this.variableName);      
+        util.debugMessage('Component %o restored payload %o from variable %s', self, message.payload , this.variableName);
         self.next(message);
-    });    
+    });
 }
 
 ESBVarGetComponent.prototype = new ESBComponent(function(){});
@@ -251,7 +282,7 @@ function createVarComponent(variableName, operation)
         component = new ESBVarSetComponent(variableName);
     }else{
         component = new ESBVarGetComponent(variableName);
-    }        
+    }
     return component;
 }
 
@@ -259,27 +290,27 @@ function createVarComponent(variableName, operation)
 /**
  * Represents a CombineComponent processing Message.
  * Combine component merges contets of the given variable into the current message payload.
- * 
+ *
  * @param   {string}    variableName  - Name of the vars variable which contents will be merged into to the message payload.
  * @type {function}
  */
-var ESBCombineComponent = function(variableName){ 
+var ESBCombineComponent = function(variableName){
     // component fields
     this.variableName = variableName;
 
-    // initialize component behaviour   
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
-        var self = this;    
+        var self = this;
 
         var parialPayload = {};
         if(message.vars[this.variableName]){
             parialPayload = message.vars[this.variableName];
         }
         Object.assign(message.payload, parialPayload);
-        
-        util.debugMessage('Component %o combined message payload with variable %s resulting in %o', self, message.vars[this.variableName] , message.payload);      
+
+        util.debugMessage('Component %o combined message payload with variable %s resulting in %o', self, message.vars[this.variableName] , message.payload);
         self.next(message);
-    });    
+    });
 }
 
 ESBCombineComponent.prototype = new ESBComponent(function(){});
@@ -296,72 +327,87 @@ function createCombineComponent(variableName)
 /**
  * Represents a CallComponent processing Message.
  * Call component invokes external component (be it third party REST service).
- * 
- * @param   {string}    variableName  - Name of the vars variable which contents will be merged into to the message payload.
+ *
+ * @param   {string}    callback  - function called on error processing
+ * @param   {string}    requestURL  - address of the endpoint to call
+ * @param   {string}    method  - one of "GET", "POST"
+ * @param   {object}    pathArguments  - if in requestURL path parameters are user (ie: my/method/${id}) object with substitutions (ie: {"id":"23"})
+ * @param   {object}    queryParameters  - will be added to request as URL query parameters (ie: someURL?param1=something) - example {"create":"true"} will result with "?create=true" in URL
+ * @param   {string}    basicAuthUser  - basic auth username
+ * @param   {string}    basicAuthPassword  - basic auth password
  * @type {function}
  */
-var ESBCallComponent = function(callback, requestURL, method, pathArguments){ 
-    // component fields    
+var ESBCallComponent = function(callback, requestURL, method, pathArguments, queryParameters, basicAuthUser, basicAuthPassword){
+    // component fields
     this.URL = requestURL;
     this.method = method;
     this.pathArguments = pathArguments;
-    
 
-    // initialize component behaviour   
+
+    // initialize component behaviour
     ESBComponent.call(this,function(context,message){
-        var self = this;                      
+        var self = this;
         var options = {
             // path: { "id": 120 },
             // parameters: { arg1: "hello", arg2: "world" },
             headers: { "Content-Type": "application/json" },
             // data: "<xml><arg1>hello</arg1><arg2>world</arg2></xml>",
-            // proxy configuration 
+            // proxy configuration
             // proxy: {
-            //     host: "proxy.foo.com", // proxy host 
-            //     port: 8080, // proxy port 
-            //     user: "ellen", // proxy username if required 
-            //     password: "ripley" // proxy pass if required 
+            //     host: "proxy.foo.com", // proxy host
+            //     port: 8080, // proxy port
+            //     user: "ellen", // proxy username if required
+            //     password: "ripley" // proxy pass if required
             // },
-            // aditional connection options passed to node http.request y https.request methods  
-            // (ie: options to connect to IIS with SSL)  
+            // aditional connection options passed to node http.request y https.request methods
+            // (ie: options to connect to IIS with SSL)
             // connection: {
             //     secureOptions: constants.SSL_OP_NO_TLSv1_2,
             //     ciphers: 'ECDHE-RSA-AES256-SHA:AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
             //     honorCipherOrder: true
             // },
-            // will replace content-types used to match responses in JSON and XML parsers 
+            // will replace content-types used to match responses in JSON and XML parsers
             // mimetypes: {
             //     json: ["application/json", "application/json;charset=utf-8"],
             //     xml: ["application/xml", "application/xml;charset=utf-8"]
             // },
-            // user: "admin", // basic http auth username if required 
-            // password: "123", // basic http auth password if required 
+            // user: "admin", // basic http auth username if required
+            // password: "123", // basic http auth password if required
             requestConfig: {
-                timeout: 1000, //request timeout in milliseconds 
-                noDelay: true, //Enable/disable the Nagle algorithm 
-                keepAlive: true, //Enable/disable keep-alive functionalityidle socket. 
-                keepAliveDelay: 1000 //and optionally set the initial delay before the first keepalive probe is sent 
+                timeout: 1000, //request timeout in milliseconds
+                noDelay: true, //Enable/disable the Nagle algorithm
+                keepAlive: true, //Enable/disable keep-alive functionalityidle socket.
+                keepAliveDelay: 1000 //and optionally set the initial delay before the first keepalive probe is sent
             },
             responseConfig: {
-                timeout: 1000 //response timeout 
+                timeout: 1000 //response timeout
             }
         };
 
         if(pathArguments){
-            options.path = pathArguments;        
+            options.path = pathArguments;
         }
-        
-        
+        if(queryParameters){
+            options.parameters = queryParameters;
+        }
+        if(basicAuthUser){
+          options.user = basicAuthUser;
+        }
+        if(basicAuthPassword){
+          options.password = basicAuthPassword;
+        }
+
+
 
         restClient = new RESTClient();
 
-        if(this.method.toUpperCase()=='GET'){   
-            util.debugCall('Component: %o going to invoke GET call: %s with options: %o', self, self.URL, options);   
+        if(this.method.toUpperCase()=='GET'){
+            util.debugCall('Component: %o going to invoke GET call: %s with options: %o', self, self.URL, options);
             restClient.get(self.URL, options, function (responseBody, response){
                 var status = self._retrieveResponseStatus(response);
-                util.debugCall('Component: %o requesting %s received response %o with body %o', self, self.URL, status, responseBody);                         
+                util.debugCall('Component: %o requesting %s received response %o with body %o', self, self.URL, status, responseBody);
                 message.payload = responseBody;
-                util.debugComponent('Component: %o requesting %s received GET response: %o', self, self.URL, status);      
+                util.debugComponent('Component: %o requesting %s received GET response: %o', self, self.URL, status);
                 self.next(message);
             }).on('error', function (err) {
                 var errorInfo = {
@@ -373,12 +419,12 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments){
             });
         }else{
             options.data = message.payload;
-            util.debugCall('Component: %o going to invoke POST call: %s with options: %o', self, self.URL, options);           
+            util.debugCall('Component: %o going to invoke POST call: %s with options: %o', self, self.URL, options);
             restClient.post(this.URL, options, function (responseBody, response){
                 var status = self._retrieveResponseStatus(response);
-                util.debugCall('Component: %o requesting %s received response %o with body %o', self, self.URL, status, responseBody);                      
+                util.debugCall('Component: %o requesting %s received response %o with body %o', self, self.URL, status, responseBody);
                 message.payload = responseBody;
-                util.debugComponent('Component: %o requesting %s received POST response: %o', self, self.URL, status);          
+                util.debugComponent('Component: %o requesting %s received POST response: %o', self, self.URL, status);
                 self.next(message);
             }).on('error', function (err) {
                 var errorInfo = {
@@ -389,7 +435,7 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments){
                 self.callback(errorInfo);
             });
         }
-    },callback);    
+    },callback);
 }
 
 ESBCallComponent.prototype = new ESBComponent(function(){});
@@ -404,21 +450,21 @@ ESBCallComponent.prototype._retrieveResponseStatus = function (restClientRespons
     return httpStatus;
 };
 
-function createCallComponent(callback, host, URI, method, pathArguments)
+function createCallComponent(callback, host, URI, method, pathArguments, queryParameters, basicAuthUser, basicAuthPassword)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var component = new ESBCallComponent(callback, host, URI, method, pathArguments);       
+    var component = new ESBCallComponent(callback, host, URI, method, pathArguments, queryParameters, basicAuthUser, basicAuthPassword);
     return component;
 }
 
 //--------- ESB Result Component
 /**
  * Represents a ResultComponent that end processing message and invokes callback function with resulting message.
- * 
+ *
  * @type {function}
  */
-var ESBResultComponent = function(callback){    
+var ESBResultComponent = function(callback){
     ESBComponent.call(this,function(context,message){
         this.callback(null, message);
     },callback);
@@ -430,20 +476,20 @@ ESBResultComponent.prototype.constructor = ESBResultComponent;
 
 function createResultComponent(callback)
 {
-    
+
     //var component = new ESBComponent(function(){});
-    var component = new ESBResultComponent(callback);       
+    var component = new ESBResultComponent(callback);
     return component;
 }
 
 //--------- ESB Route Component
 /**
  * Represents a RouteComponent that allows conditional routing (content based) of messages.
- * 
+ *
  * Routing configuration is an object:
  * {
  *   routeItems: [
- *       {  
+ *       {
  *           routeFunction: (Function(ESBMessage)),
  *           channel: (String)
  *       }
@@ -453,15 +499,15 @@ function createResultComponent(callback)
  * routeFunction MUST return True when for given message it should be transferred to the given channel
  * @type {function}
  */
-var ESBRouteComponent = function(callback, routingConfiguration){    
+var ESBRouteComponent = function(callback, routingConfiguration){
     ESBComponent.call(this,function(context,message){
         var self = this;
         var destinationChannel = 'default';
         routingConfiguration.routeItems.forEach(function(routingItem, index, array){
-            if(routingItem.routeFunction(message)){                
+            if(routingItem.routeFunction(message)){
                 self.next(routingItem.channel, message);
             }
-        });        
+        });
     },callback);
 }
 
@@ -471,7 +517,7 @@ ESBRouteComponent.prototype.constructor = ESBRouteComponent;
 
 function createRouteComponent(callback, routingConfiguration)
 {
-    var component = new ESBRouteComponent(callback, routingConfiguration);       
+    var component = new ESBRouteComponent(callback, routingConfiguration);
     return component;
 }
 
@@ -482,7 +528,7 @@ function createRouteComponent(callback, routingConfiguration)
  * The function MUST not be blocking processing.
  * @type {function}
  */
-var ESBScriptComponent = function(callback, scriptFunction){    
+var ESBScriptComponent = function(callback, scriptFunction){
     ESBComponent.call(this,function(context,message){
         var self = this;
         scriptFunction(message, callback);
@@ -496,12 +542,12 @@ ESBScriptComponent.prototype.constructor = ESBScriptComponent;
 
 function createScriptComponent(callback, scriptFunction)
 {
-    var component = new ESBScriptComponent(callback, scriptFunction);       
+    var component = new ESBScriptComponent(callback, scriptFunction);
     return component;
 }
 
 
-module.exports = {    
+module.exports = {
      createLoggerComponent: createLoggerComponent,
      createMapperComponent: createMapperComponent,
      createSleepComponent: createSleepComponent,
@@ -511,5 +557,6 @@ module.exports = {
      createResultComponent: createResultComponent,
      createRouteComponent: createRouteComponent,
      createScriptComponent: createScriptComponent,
+     createPayloadComponent: createPayloadComponent,
      createMessage: createMessage
 }
