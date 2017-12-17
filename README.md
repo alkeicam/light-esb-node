@@ -30,7 +30,7 @@ function esbCallback(error,message){
   }else{
     console.log("RESULT received:", message);
   }
-  
+
 }
 
 var component = ESB.createLoggerComponent(esbCallback);
@@ -51,7 +51,7 @@ component.connect(receiver2);
 ```js
 var component = ESB.createLoggerComponent(esbCallback);
 
-// prepare input message and start processing 
+// prepare input message and start processing
 var ESBMessage = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");
 component.send(ESBMessage);
 ```
@@ -70,8 +70,14 @@ var component = ESB.createVarComponent("customerData",'GET');
 
 #### Merge data from vars storage with payload of the currently processed message
 ```js
-// now some merging of messages, contents of vars.customerInfo will be merged into processed message payload 
+// now some merging of messages, contents of vars.customerInfo will be merged into processed message payload
 var component = ESB.createCombineComponent("customerInfo");
+```
+
+#### Transform payload
+```js
+// the message that reaches this component will be altered by mapping provided - see object-mapper npm module documentation for details how to build maps
+var component = ESB.createMapperComponent({"hello":["XYZ.hello","ZZZ.hello"]});
 ```
 
 #### Call external HTTP services (POST, GET)
@@ -98,7 +104,7 @@ var c17 = ESB.createRouteComponent(esbCallback, {
 			routeFunction: function(esbMessage){
 				if(esbMessage.context.caller.user=="marry@doe.com")
 					return true;
-				return false;	
+				return false;
 			},
 			channel: "marry"
 		}
@@ -124,7 +130,7 @@ var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
 
 #### Return results - at the end of the processing flow
 ```js
-// at the end of the flow return resulting message - esbCallback function will receive the resulting message object 
+// at the end of the flow return resulting message - esbCallback function will receive the resulting message object
 var component = ESB.createResultComponent(esbCallback);  
 ```
 ## Sample
