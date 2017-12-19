@@ -170,5 +170,6 @@ process.env.DEBUG = 'esb:*';
 ```
 
 ### Changelog
+- **v1.2.1** - added PayloadComponent and support for dynamic parameters in CallComponent
 - **v1.0.2** - added Route and Script components
 - **v1.0.0** - initial version
