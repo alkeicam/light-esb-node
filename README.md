@@ -68,6 +68,18 @@ var component = ESB.createVarComponent("customerData",'SET');
 var component = ESB.createVarComponent("customerData",'GET');
 ```
 
+#### Set payload to a custom object
+```js
+// message payload will be replaced with the provided object, one may use reference to the original message fields using '$' notion
+var c21 = ESB.createPayloadComponent(esbCallback, {
+  "f1":"f1val",
+  "f2obj": {
+    "f3":"$message.context.correlationId",
+    "f4":"f4val"
+  }
+});
+```
+
 #### Merge data from vars storage with payload of the currently processed message
 ```js
 // now some merging of messages, contents of vars.customerInfo will be merged into processed message payload
@@ -85,6 +97,8 @@ var component = ESB.createMapperComponent({"hello":["XYZ.hello","ZZZ.hello"]});
 // now it is time for some third party calls, call external REST service
 var component1 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
 var component2 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
+// full call using path parameter (${postId}), dynamic query params (?param1=) - using '$' reference to message contents and basic auth
+var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
 ```
 
 #### Content based routing - redirect messages to the appropriate channel based on message contents

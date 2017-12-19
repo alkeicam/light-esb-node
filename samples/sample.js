@@ -86,9 +86,10 @@ var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
 		esbMessage.context.caller.user = "johnthegreat@doe.com"
 	}
 });
-// full call using path parameter (${postId}), query params (?param1=yes) and basic auth
+// full call using path parameter (${postId}), dynamic query params (?param1=) - using '$' reference to message contents and basic auth
 var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
 
+// message payload will be replaced with the provided object, one may use reference to the original message fields using '$' notion
 var c21 = ESB.createPayloadComponent(esbCallback, {
   "f1":"f1val",
   "f2obj": {
