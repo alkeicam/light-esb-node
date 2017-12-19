@@ -50,7 +50,7 @@ var c12 = ESB.createCombineComponent("customerInfo");
 var c13 = ESB.createLoggerComponent(esbCallback);
 // now it is time for some third party calls, call external REST service
 var c14 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
-var c15 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
+var c15 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post",{},{"corrId":"$message.context.correlationId"});
 // at the end of the flow return resulting message
 var c16 = ESB.createResultComponent(esbCallback);
 
@@ -87,7 +87,15 @@ var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
 	}
 });
 // full call using path parameter (${postId}), query params (?param1=yes) and basic auth
-var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"yes"},"username","pass");
+var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
+
+var c21 = ESB.createPayloadComponent(esbCallback, {
+  "f1":"f1val",
+  "f2obj": {
+    "f3":"$message.context.correlationId",
+    "f4":"f4val"
+  }
+});
 
 // wire up processing flow
 c1.connect(c2);
@@ -110,7 +118,8 @@ c13.connect(c17);
 c17.connect("john",c19);
 c17.connect("marry",c18);
 
-c19.connect(c16);
+c19.connect(c21);
+c21.connect(c16);
 
 // prepare input message and start processing
 var message1 = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");

@@ -4,6 +4,7 @@ var util = require('./util')
 var RESTClient = require('node-rest-client').Client;
 var clone = require('clone');
 
+
 /**
  * Represents a message being processed by components.
  *
@@ -32,6 +33,45 @@ function createMessage(payload,callerUser, callerSystem, callerCorrelationId)
     var message = new ESBMessage(payload,callerUser, callerSystem, callerCorrelationId);
     return message;
 }
+/**
+* Returns true when variable name starts with "$" sign.
+* Such variables will be evaluated
+*/
+function isEvaluable(variableName){
+  return variableName.lastIndexOf("$", 0) === 0;
+}
+
+function iterateObject(obj, fn) {
+    var i = 0
+      , keys = []
+      ;
+
+    if (Array.isArray(obj)) {
+        for (; i < obj.length; ++i) {
+            if(typeof obj[i] === "object" && obj[i] !== null){
+              // when object then drill down
+              iterateObject(obj[i], fn);
+            }else{
+              if (fn(obj[i], i, obj) === false) {
+                  break;
+              }
+            }
+        }
+    } else if (typeof obj === "object" && obj !== null) {
+        keys = Object.keys(obj);
+        for (; i < keys.length; ++i) {
+            if (typeof obj[keys[i]] === "object" && obj[keys[i]] !== null){
+              // when object then drill down
+              iterateObject(obj[keys[i]], fn);
+            }else{
+              if (fn(obj[keys[i]], keys[i], obj) === false) {
+                  break;
+              }
+            }
+        }
+    }
+}
+
 
 
 /**
@@ -162,29 +202,39 @@ function createMapperComponent(map)
  * Represents an PayloadComponent processing Message.
  * Payload component replaces message payload with the object provided
  *
- * @param   {object}    newPayload  - The number of miliseconds for which the Message processing will be hold.
+ * @param   {object}    newPayload  - the new payload that will replace current message payload, in any field there might be used a reference to a message field using '$' notation.
  * @type {function}
  */
-var ESBPayloadComponent = function(newPayload){
+var ESBPayloadComponent = function(callback, newPayload){
     // component fields
     this.newPayload = newPayload;
 
     // initialize component behaviour
     ESBComponent.call(this,function(context,message){
-        message.payload = clone(this.newPayload);
+        var workingPayload = clone(this.newPayload);
+        debugger;
+        iterateObject(workingPayload, function(obj, key, parentObject){
+            if(isEvaluable(obj)){
+              var strippedValue = obj.substring(1);
+              var evaluatedValue = eval(strippedValue);
+              parentObject[key] = evaluatedValue;
+            }
+        });
+
+        message.payload = workingPayload;
         util.debugMessage('Component %o replaced payload with result %o', this, message.payload);
         this.next(message);
-    });
+    },callback);
 }
 
 ESBPayloadComponent.prototype = new ESBComponent(function(){});
 ESBPayloadComponent.prototype.constructor = ESBPayloadComponent;
 
 
-function createPayloadComponent(newPayload)
+function createPayloadComponent(callback, newPayload)
 {
 
-    var component = new ESBPayloadComponent(newPayload);
+    var component = new ESBPayloadComponent(callback, newPayload);
     return component;
 }
 
@@ -329,19 +379,27 @@ function createCombineComponent(variableName)
  * Call component invokes external component (be it third party REST service).
  *
  * @param   {string}    callback  - function called on error processing
- * @param   {string}    requestURL  - address of the endpoint to call
+ * @param   {string}    requestURL  - address of the endpoint to call. One may also reference contents of the processed ESB message using "$" notation. Example: $message.payload.link will use message.payload.link property of the processed message as request url
  * @param   {string}    method  - one of "GET", "POST"
- * @param   {object}    pathArguments  - if in requestURL path parameters are user (ie: my/method/${id}) object with substitutions (ie: {"id":"23"})
- * @param   {object}    queryParameters  - will be added to request as URL query parameters (ie: someURL?param1=something) - example {"create":"true"} will result with "?create=true" in URL
- * @param   {string}    basicAuthUser  - basic auth username
- * @param   {string}    basicAuthPassword  - basic auth password
+ * @param   {object}    pathArguments  - optional -  if in requestURL path parameters are user (ie: my/method/${id}) object with substitutions (ie: {"id":"23"}). One may also reference contents of the processed ESB message using "$" notation. Example: {"id":"$message.context.correlationId"} will use message.context.correlationId variable contents.
+ * @param   {object}    queryParameters  - optional - will be added to request as URL query parameters (ie: someURL?param1=something) - example {"create":"true"} will result with "?create=true" in URL. One may also reference contents of the processed ESB message using "$" notation. Example: {"create":"$message.context.correlationId"} will use message.context.correlationId variable contents.
+ * @param   {string}    basicAuthUser - optional -  basic auth username
+ * @param   {string}    basicAuthPassword - optional - basic auth password
  * @type {function}
  */
 var ESBCallComponent = function(callback, requestURL, method, pathArguments, queryParameters, basicAuthUser, basicAuthPassword){
     // component fields
-    this.URL = requestURL;
+    if(isEvaluable(requestURL)){
+      // remove leading '$'
+      var strippedValue = requestURL.substring(1);
+      var evaluatedValue = eval(strippedValue);
+      this.URL = evaluatedValue;
+    }else{
+      this.URL = requestURL;
+    }
+
     this.method = method;
-    this.pathArguments = pathArguments;
+
 
 
     // initialize component behaviour
@@ -385,9 +443,36 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments, que
         };
 
         if(pathArguments){
+            // parse and evaluate parameters when necessary
+            // when parameter starts with "$" its value will be evaluated
+            Object.keys(pathArguments).forEach(function(key) {
+              var value = pathArguments[key];
+              if(isEvaluable(value)){
+                // omit first char '$'
+                var strippedValue = value.substring(1);
+                var evaluatedValue = eval(strippedValue);
+                pathArguments[key] = evaluatedValue;
+              }
+            });
+
             options.path = pathArguments;
         }
+
+        this.pathArguments = pathArguments;
+
         if(queryParameters){
+
+            // parse and evaluate parameters when necessary
+            // when parameter starts with "$" its value will be evaluated
+            Object.keys(queryParameters).forEach(function(key) {
+              var value = queryParameters[key];
+              if(isEvaluable(value)){
+                // omit first char '$'
+                var strippedValue = value.substring(1);
+                var evaluatedValue = eval(strippedValue);
+                queryParameters[key] = evaluatedValue;
+              }
+            });
             options.parameters = queryParameters;
         }
         if(basicAuthUser){
@@ -396,8 +481,6 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments, que
         if(basicAuthPassword){
           options.password = basicAuthPassword;
         }
-
-
 
         restClient = new RESTClient();
 
