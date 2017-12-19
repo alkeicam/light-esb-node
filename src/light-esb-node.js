@@ -6,9 +6,12 @@ var clone = require('clone');
 
 
 /**
- * Represents a message being processed by components.
+ * Represents a ESB Message being processed by components.
  *
  * @param   {object}    payload  - The payload of the message
+ * @param   {string}    callerUser  - the entity that originated the message
+ * @param   {string}    callerSystem  - the system that originated the message
+ * @param   {string}    callerCorrelationId  - the correlationId in case that this message is a result of some other message processing (correlation chain)
  * @type {function}
  */
 var ESBMessage = function(payload, callerUser, callerSystem, callerCorrelationId){

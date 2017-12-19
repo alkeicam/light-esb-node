@@ -47,6 +47,33 @@ component.connect(receiver1);
 component.connect(receiver2);
 ```
 
+#### ESBMessage structure
+```js
+/**
+ * Represents a ESB Message being processed by components.
+ *
+ * @param   {object}    payload  - The payload of the message
+ * @param   {string}    callerUser  - the entity that originated the message
+ * @param   {string}    callerSystem  - the system that originated the message
+ * @param   {string}    callerCorrelationId  - the correlationId in case that this message is a result of some other message processing (correlation chain)
+ * @type {function}
+ */
+var ESBMessage = function(payload, callerUser, callerSystem, callerCorrelationId){
+    this.payload = payload;
+    this.context = {
+        createdTimestamp: Date.now(),
+        correlationId: uuidGenerator.v4(),
+        caller: {
+            user: callerUser,
+            system: callerSystem,
+            correlationId: callerCorrelationId
+        }
+    };
+    this.originalPayload = clone(payload);
+    this.vars = {};
+}
+```
+
 #### Initiate processing - sending input message to the flow
 ```js
 var component = ESB.createLoggerComponent(esbCallback);
