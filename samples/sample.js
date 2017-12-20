@@ -93,10 +93,13 @@ var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode
 var c21 = ESB.createPayloadComponent(esbCallback, {
   "f1":"f1val",
   "f2obj": {
-    "f3":"$message.context.correlationId",
+    "f3":"$'something_'+message.context.correlationId",
     "f4":"f4val"
   }
 });
+
+// DELETE call example
+var c22 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "delete", {"postId":120});
 
 // wire up processing flow
 c1.connect(c2);

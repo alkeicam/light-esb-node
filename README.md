@@ -124,6 +124,9 @@ var component = ESB.createMapperComponent({"hello":["XYZ.hello","ZZZ.hello"]});
 // now it is time for some third party calls, call external REST service
 var component1 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
 var component2 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post");
+// DELETE call example
+var c22 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "delete", {"postId":120});
+
 // full call using path parameter (${postId}), dynamic query params (?param1=) - using '$' reference to message contents and basic auth
 var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
 ```
@@ -197,6 +200,7 @@ process.env.DEBUG = 'esb:*';
 ```
 
 ### Changelog
+- **v1.2.3** - added DELETE support in CallComponent
 - **v1.2.2** - added PayloadComponent and support for dynamic parameters in CallComponent
 - **v1.0.2** - added Route and Script components
 - **v1.0.0** - initial version
