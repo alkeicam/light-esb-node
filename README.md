@@ -200,6 +200,7 @@ process.env.DEBUG = 'esb:*';
 ```
 
 ### Changelog
+- **v1.2.4** - fixed Basic Auth problem
 - **v1.2.3** - added DELETE support in CallComponent
 - **v1.2.2** - added PayloadComponent and support for dynamic parameters in CallComponent
 - **v1.0.2** - added Route and Script components

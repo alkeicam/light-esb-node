@@ -49,8 +49,8 @@ var c11 = ESB.createLoggerComponent(esbCallback);
 var c12 = ESB.createCombineComponent("customerInfo");
 var c13 = ESB.createLoggerComponent(esbCallback);
 // now it is time for some third party calls, call external REST service
-var c14 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/users", "get");
-var c15 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/posts", "post",{},{"corrId":"$message.context.correlationId"});
+var c14 = ESB.createCallComponent(esbCallback, "http://jsonplaceholder.typicode.com/users", "get");
+var c15 = ESB.createCallComponent(esbCallback, "http://jsonplaceholder.typicode.com/posts", "post",{},{"corrId":"$message.context.correlationId"});
 // at the end of the flow return resulting message
 var c16 = ESB.createResultComponent(esbCallback);
 
@@ -87,7 +87,7 @@ var c19 = ESB.createScriptComponent(esbCallback, function(esbMessage, callback){
 	}
 });
 // full call using path parameter (${postId}), dynamic query params (?param1=) - using '$' reference to message contents and basic auth
-var c20 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
+var c20 = ESB.createCallComponent(esbCallback, "http://jsonplaceholder.typicode.com/post/${postId}", "post",{"postId":120},{"param1":"$message.context.correlationId"},"username","pass");
 
 // message payload will be replaced with the provided object, one may use reference to the original message fields using '$' notion
 var c21 = ESB.createPayloadComponent(esbCallback, {
@@ -99,7 +99,7 @@ var c21 = ESB.createPayloadComponent(esbCallback, {
 });
 
 // DELETE call example
-var c22 = ESB.createCallComponent(esbCallback, "https://jsonplaceholder.typicode.com/post/${postId}", "delete", {"postId":120});
+var c22 = ESB.createCallComponent(esbCallback, "http://jsonplaceholder.typicode.com/post/${postId}", "delete", {"postId":120});
 
 // wire up processing flow
 c1.connect(c2);
@@ -123,7 +123,8 @@ c17.connect("john",c19);
 c17.connect("marry",c18);
 
 c19.connect(c21);
-c21.connect(c16);
+c21.connect(c20);
+c20.connect(c16);
 
 // prepare input message and start processing
 var message1 = ESB.createMessage({hello: "world"},"john@doe.com","CRM","x92938XA");

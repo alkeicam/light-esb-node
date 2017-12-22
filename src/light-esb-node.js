@@ -41,7 +41,9 @@ function createMessage(payload,callerUser, callerSystem, callerCorrelationId)
 * Such variables will be evaluated
 */
 function isEvaluable(variableName){
-  return variableName.lastIndexOf("$", 0) === 0;
+  if(typeof obj === "string"){
+    return variableName.lastIndexOf("$", 0) === 0;
+  } else return false;
 }
 
 function iterateObject(obj, fn) {
@@ -484,8 +486,8 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments, que
         if(basicAuthPassword){
           options.password = basicAuthPassword;
         }
-
-        restClient = new RESTClient();
+        
+        restClient = new RESTClient(options);
 
         if(this.method.toUpperCase()=='GET'){
             util.debugCall('Component: %o going to invoke GET call: %s with options: %o', self, self.URL, options);
