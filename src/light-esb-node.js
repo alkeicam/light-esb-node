@@ -41,7 +41,7 @@ function createMessage(payload,callerUser, callerSystem, callerCorrelationId)
 * Such variables will be evaluated
 */
 function isEvaluable(variableName){
-  if(typeof obj === "string"){
+  if(typeof variableName === "string"){
     return variableName.lastIndexOf("$", 0) === 0;
   } else return false;
 }
@@ -217,7 +217,7 @@ var ESBPayloadComponent = function(callback, newPayload){
     // initialize component behaviour
     ESBComponent.call(this,function(context,message){
         var workingPayload = clone(this.newPayload);
-        debugger;
+
         iterateObject(workingPayload, function(obj, key, parentObject){
             if(isEvaluable(obj)){
               var strippedValue = obj.substring(1);
@@ -450,8 +450,9 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments, que
         if(pathArguments){
             // parse and evaluate parameters when necessary
             // when parameter starts with "$" its value will be evaluated
+
             Object.keys(pathArguments).forEach(function(key) {
-              var value = pathArguments[key];
+              var value = pathArguments[key];            
               if(isEvaluable(value)){
                 // omit first char '$'
                 var strippedValue = value.substring(1);
@@ -486,7 +487,7 @@ var ESBCallComponent = function(callback, requestURL, method, pathArguments, que
         if(basicAuthPassword){
           options.password = basicAuthPassword;
         }
-        
+
         restClient = new RESTClient(options);
 
         if(this.method.toUpperCase()=='GET'){
