@@ -1,6 +1,6 @@
 {
   "name": "light-esb-node",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Lightweight message processing and orchestration module for Node",
   "author": {
     "name": "Maciej Grula"
