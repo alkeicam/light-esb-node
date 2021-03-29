@@ -3,7 +3,7 @@
   "version": "1.2.5",
   "description": "Lightweight message processing and orchestration module for Node",
   "author": {
-    "name": "Maciej Grula"
+    "name": "Al Keicam"
   },
   "license": "LGPL",
   "keywords": [
@@ -21,7 +21,7 @@
   },
   "bugs": {
     "url": "https://github.com/alkeicam/light-esb-node/issues",
-    "email": "maciej.grula@gmail.com"
+    "email": "alkeicam@yahoo.com"
   },
   "main": "./src/light-esb-node.js",
   "engines": {
